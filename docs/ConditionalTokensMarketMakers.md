@@ -4,35 +4,35 @@
 
 ```mermaid
 graph TD
-    A[用户] -->|购买/出售代币| B[市场做市商]
-    B -->|交互| C[条件代币系统]
-    D[预言机] -->|报告结果| C
-    A -->|赎回奖金| C
-    B -->|创建| E[工厂合约]
+    A[User] -->|Buy/Sell tokens| B[Market Maker]
+    B -->|Interact| C[Conditional Tokens]
+    D[Oracle] -->|Report result| C
+    A -->|Redeem reward| C
+    B -->|Create| E[Factory Contract]
     
-    subgraph 市场做市商
+    subgraph Market Makers
         F[FixedProductMarketMaker]
         G[LMSRMarketMaker]
-        H[基础MarketMaker]
-        H <-- 继承 --> F
-        H <-- 继承 --> G
+        H[BaseMarketMaker]
+        H <-- Inherit --> F
+        H <-- Inherit --> G
     end
     
-    subgraph 工厂合约
+    subgraph Factory Contracts
         I[FPMMDeterministicFactory]
         J[FixedProductMarketMakerFactory]
         K[LMSRMarketMakerFactory]
     end
     
-    subgraph 核心组件
+    subgraph Core Components
         L[ConditionalTokens]
-        M[抵押品Token]
+        M[CollateralToken]
         N[Create2CloneFactory]
     end
     
-    E -- 使用 --> N
-    B -- 使用 --> L
-    B -- 使用 --> M
+    E -- Use --> N
+    B -- Use --> L
+    B -- Use --> M
 ```
 
 ## 2. 系统组件说明
@@ -88,44 +88,44 @@ graph TD
 
 ```mermaid
 sequenceDiagram
-    参与者 用户
-    参与者 工厂合约
-    参与者 做市商合约
-    参与者 条件代币系统
+    participant User
+    participant Factory
+    participant MarketMaker
+    participant ConditionalTokens
     
-    用户 ->> 条件代币系统: 准备条件(prepareCondition)
-    用户 ->> 工厂合约: 批准抵押品使用
-    用户 ->> 工厂合约: 创建做市商(create2FixedProductMarketMaker)
-    工厂合约 ->> 做市商合约: 部署合约
-    工厂合约 ->> 做市商合约: 转移初始资金
-    做市商合约 ->> 条件代币系统: 拆分代币(splitPosition)
-    做市商合约 ->> 用户: 铸造流动性份额
-    做市商合约 ->> 用户: 返回未使用的代币
+    User->>ConditionalTokens: prepareCondition
+    User->>Factory: approve collateral
+    User->>Factory: create2FixedProductMarketMaker
+    Factory->>MarketMaker: deploy contract
+    Factory->>MarketMaker: transfer initial funds
+    MarketMaker->>ConditionalTokens: splitPosition
+    MarketMaker->>User: mint liquidity shares
+    MarketMaker->>User: return unused tokens
 ```
 
 ### 3.2 交易流程
 
 ```mermaid
 sequenceDiagram
-    参与者 用户
-    参与者 做市商合约
-    参与者 条件代币系统
+    participant User
+    participant MarketMaker
+    participant ConditionalTokens
     
-    用户 ->> 做市商合约: 批准抵押品使用
+    User->>MarketMaker: approve collateral
     
-    alt 购买操作
-        用户 ->> 做市商合约: 计算购买量(calcBuyAmount)
-        用户 ->> 做市商合约: 买入代币(buy)
-        做市商合约 ->> 用户: 转移抵押品
-        做市商合约 ->> 条件代币系统: 拆分代币
-        做市商合约 ->> 用户: 转移结果代币
-    else 出售操作
-        用户 ->> 做市商合约: 计算出售量(calcSellAmount)
-        用户 ->> 做市商合约: 卖出代币(sell)
-        用户 ->> 条件代币系统: 批准代币使用
-        用户 ->> 做市商合约: 转移代币
-        做市商合约 ->> 条件代币系统: 合并代币
-        做市商合约 ->> 用户: 支付抵押品
+    alt Buy Operation
+        User->>MarketMaker: calcBuyAmount
+        User->>MarketMaker: buy
+        MarketMaker->>User: transfer collateral
+        MarketMaker->>ConditionalTokens: splitPosition
+        MarketMaker->>User: transfer outcome tokens
+    else Sell Operation
+        User->>MarketMaker: calcSellAmount
+        User->>MarketMaker: sell
+        User->>ConditionalTokens: approve tokens
+        User->>MarketMaker: transfer tokens
+        MarketMaker->>ConditionalTokens: mergePositions
+        MarketMaker->>User: pay collateral
     end
 ```
 
@@ -133,13 +133,13 @@ sequenceDiagram
 
 ```mermaid
 sequenceDiagram
-    参与者 预言机
-    参与者 用户
-    参与者 条件代币系统
+    participant Oracle
+    participant User
+    participant ConditionalTokens
     
-    预言机 ->> 条件代币系统: 报告结果(reportPayouts)
-    用户 ->> 条件代币系统: 赎回代币(redeemPositions)
-    条件代币系统 ->> 用户: 转移奖励抵押品
+    Oracle->>ConditionalTokens: reportPayouts
+    User->>ConditionalTokens: redeemPositions
+    ConditionalTokens->>User: transfer reward collateral
 ```
 
 ## 4. 关键功能实现
